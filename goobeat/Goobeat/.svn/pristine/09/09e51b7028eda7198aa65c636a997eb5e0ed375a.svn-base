@@ -1,0 +1,40 @@
+#include "MusicList.h"
+
+MusicList::MusicList(vector<Music*>* tempvector){
+	vector<Music*>::iterator iter;
+	Music* tempmusic;
+	int count;
+	for(count=0;count<3;count++){
+		musiclistvector[count].resize((tempvector->size()+2)/3);
+		musiclistvector[count].clear();
+	}
+	for(iter=tempvector->begin(), count=0;iter!=tempvector->end();iter++, count++){
+		tempmusic=(Music*)(*iter);
+		musiclistvector[count%3].push_back(tempmusic);
+	}
+	switch(count%3){
+	case 0:
+		break;
+	case 1:
+		musiclistvector[1].push_back(NULL);
+		musiclistvector[2].push_back(NULL);
+		break;
+	case 2:
+		musiclistvector[2].push_back(NULL);
+		break;
+	}
+	location=0;
+	listsize=musiclistvector[0].size();
+}
+
+void MusicList::MoveRight(){
+	if(location<listsize-4){
+		location++;
+	}
+}
+
+void MusicList::MoveLeft(){
+	if(location>0){
+		location--;
+	}
+}

@@ -1,0 +1,14 @@
+#pragma once
+
+#include <stdlib.h>
+#include <wchar.h>
+
+class Music{
+private:
+	wchar_t* filename;
+public:
+	Music(const wchar_t* fname);
+	~Music(){;}
+//	void Play();
+//	void Stop();
+};

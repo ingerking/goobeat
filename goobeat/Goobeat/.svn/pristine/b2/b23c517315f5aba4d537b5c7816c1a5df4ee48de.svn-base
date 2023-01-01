@@ -1,0 +1,52 @@
+#pragma once
+
+#include "waveformat.h"
+#include "dataformat.h"
+#include "2darray.h"
+#include "waveanalysismatrix.h"
+#include "sincosmake.h"
+#include <vector>
+#include <fstream>
+#include <string.h>
+#include <wchar.h>
+
+
+using namespace std;
+
+class Note_T
+{
+private:
+	CHUNK* chunk;
+	RIFF* riff;
+	FORMAT* format;
+	FACT* fact;
+	FILE* fp;
+	FILE* fpout;
+	double* cosarray;
+	double* sinarray;
+	unsigned int alldatasize;
+	int samplelong;
+	int datasize;
+	bool fileexists;
+	bool newfilecreated;
+
+
+	//vector<vector<Data_T>*>* data;
+public:
+	Note_T(const wchar_t* fname, const wchar_t* path);
+	~Note_T(){
+		if(chunk!=NULL){free(chunk);}
+		if(riff!=NULL){free(riff);}
+		if(format!=NULL){free(format);}
+		if(fact!=NULL){free(fact);}
+		if(fp!=0){fclose(fp);}
+		if(fpout!=0){fclose(fpout);}
+		if(newfilecreated){
+			free_vector<double>(cosarray);
+			free_vector<double>(sinarray);
+		}
+	}
+	void MakeData(int loud);
+	bool filecheck(FILE* checkfile);
+	bool fileavailable(){return fileexists;}
+};

@@ -1,0 +1,6 @@
+#include "Music.h"
+
+Music::Music(const wchar_t* fname){
+	filename=(wchar_t*)malloc(sizeof(wchar_t)*wcslen(fname));
+	wcscpy(filename,fname);
+}

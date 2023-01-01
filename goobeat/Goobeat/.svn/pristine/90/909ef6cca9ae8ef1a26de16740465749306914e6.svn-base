@@ -1,0 +1,44 @@
+#include "NoteMake.h"
+#include <wchar.h>
+#include <io.h>
+
+void NoteMake::MakeNoteWav(vector<Music*>* tempvector, const wchar_t * inputpath, const wchar_t* outputpath, int loud){
+	_wchdir(inputpath);
+	struct _wfinddata_t c_file;
+	long hFile;
+	hFile = (long)_wfindfirst( L"*.wav", &c_file);
+	if(hFile==-1){return;}
+	do {
+		note=new Note_T(c_file.name, outputpath);
+		note->MakeData(loud);
+
+		Music* tempmusic=new Music(c_file.name);
+		tempvector->push_back(tempmusic);
+
+		delete(note);
+	}while( _wfindnext( hFile, &c_file ) == 0 );
+	_findclose( hFile );
+}
+
+void NoteMake::MakeNoteMp3(vector<Music*>* tempvector, const wchar_t * inputpath, const wchar_t* outputpath, int loud){
+	_wchdir(inputpath);
+	struct _wfinddata_t c_file;
+	long hFile;
+	hFile = (long)_wfindfirst( L"*.mp3", &c_file);
+	if(hFile==-1){return;}
+	do{
+		/////////
+		
+		//여기다 분석코드
+
+		/////////
+	}while( _wfindnext( hFile, &c_file ) == 0 );
+	_findclose( hFile );
+}
+
+void NoteMake::MakeNote(vector<Music*>* tempvector, const wchar_t * inputpath, const wchar_t* outputpath, int loud){
+	MakeNoteWav(tempvector, inputpath, outputpath, loud);
+	MakeNoteMp3(tempvector, inputpath, outputpath, loud);
+
+	sort(tempvector->begin(), tempvector->end());
+}

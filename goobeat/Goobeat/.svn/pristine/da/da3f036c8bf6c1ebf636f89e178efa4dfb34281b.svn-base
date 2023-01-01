@@ -1,0 +1,107 @@
+#include "notes.h"//fprintf를 fwrite로 모두 바꿀것
+
+Note_T::Note_T(const char* fname){
+	fp=fopen(fname,"rb");
+	char* tempfname=(char*)malloc(strlen(fname));
+	strcpy(tempfname, fname);
+	strcat(tempfname, ".not");
+	fpout=fopen(tempfname,"wb");
+}
+
+void Note_T::MakeData(int loud){
+	riff=(RIFF *)malloc(sizeof(RIFF));
+	if( 1 == fread(riff,sizeof(RIFF),1,fp) ) {
+		chunk=read_chunk(fp);
+		while(chunk!=0){
+			switch(chunk->id){
+			case 0x20746D66:
+				format=(FORMAT*)chunk;
+				chunk=read_chunk(fp);
+				break;
+			case 0x74636166:
+				fact=(FACT*)chunk;
+				chunk=read_chunk(fp);
+				break;
+			case 0x61746164:
+				alldatasize=chunk->size;
+				samplelong=format->BytesPerSec/20;
+				datasize=alldatasize/samplelong/2;
+				chunk=0;
+				break;
+			default:
+				return;
+			}
+		}
+	}
+	
+	cosarray=makecos_f(samplelong);
+	sinarray=makesin_f(samplelong);
+	
+
+	data=new vector<vector<Data_T>*>(datasize+1);
+	data->clear();
+	
+	int projectid=0x9BEA2123;
+	int projectsize=datasize+1;
+	int dataid=0x2E0EDA2A;
+
+	fwrite(&projectid, 1, sizeof(int), fpout);
+	fwrite(&projectsize, 1, sizeof(int), fpout);
+	fwrite(&dataid, 1, sizeof(int), fpout);
+
+	vector<Data_T>::iterator iter;
+	Data_T tempbinarydata;
+	int templouder;
+
+	short* tempdata=vector_space<short>(samplelong);
+	for(int i=0;i<datasize;i++){
+		fread(tempdata,sizeof(short),samplelong,fp);
+		if(feof(fp)) break;
+		vector<Data_T>* tempvector=wave_analysis<short>(tempdata, samplelong, cosarray, sinarray);
+		data->push_back(tempvector);
+		for(iter=tempvector->begin();iter!=tempvector->end();iter++){
+			tempbinarydata=*iter;
+			if(tempbinarydata.louder>=loud){
+				templouder=((int)tempbinarydata.louder%16)+1;
+			}
+			else{
+				templouder=0;
+			}
+			fwrite(&templouder, 1, sizeof(int), fpout);
+		}
+	}
+	free_vector(tempdata);
+	tempdata=vector_space<short>(samplelong);
+	//fread(tempdata,1,alldatasize%samplelong,fp);
+	fread(tempdata,sizeof(short),samplelong,fp);
+	data->push_back(wave_analysis<short>(tempdata,samplelong, cosarray, sinarray));
+	free_vector(tempdata);
+	
+	/*
+	wave=read_wave(fname);
+	samplelong=wave->format->BytesPerSec/20;
+	if(wave->data->Size%samplelong==0){
+		datasize=wave->data->Size/samplelong;
+	}
+	else{
+		datasize=wave->data->Size/samplelong+1;
+	}*/
+}
+/*
+void Note_T::MakeData(){
+	data->resize(datasize);
+	data->clear();
+	
+	short* tempdata;
+	//double* tempdoubledata;
+	for(int i=0;i<datasize-1;i++){
+		tempdata=&(wave->data->Data[samplelong*i]);
+		data->push_back(wave_analysis<short>(tempdata, samplelong));
+	}
+	tempdata=vector_space<short>(samplelong);
+	for(int i=(datasize-1)*samplelong, j=0;i<wave->data->Size/2;i++, j++){
+		tempdata[i+j]=wave->data->Data[i];
+	}
+	data->push_back(wave_analysis<short>(tempdata,samplelong));
+	free_vector(tempdata);
+}*/

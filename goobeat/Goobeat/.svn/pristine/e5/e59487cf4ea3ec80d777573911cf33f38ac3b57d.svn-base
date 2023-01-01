@@ -1,0 +1,389 @@
+#include <windows.h>
+#include <io.h>
+#include <vector>
+#include "notes.h"
+#include "NoteMake.h"
+#include "Music.h"
+#include "MusicList.h"
+#include "UI.h"
+
+///////////
+#include <crtdbg.h>
+#define CRTDBG_MAP_ALLOC 
+
+
+
+#ifdef _DEBUG
+
+#define new new( _NORMAL_BLOCK, __FILE__, __LINE__ )        //궁금하시면 제 게시글 중 <매크로 마법> 편을 보세요. 
+
+#endif
+
+
+
+////////
+
+
+
+
+#pragma comment (lib, "d3d9.lib")
+#pragma comment (lib, "d3dx9.lib")
+
+
+#pragma comment(lib, "winmm")
+
+using namespace std;
+
+// global declarations
+LPDIRECT3D9 d3d;    // the pointer to our Direct3D interface
+LPDIRECT3DDEVICE9 d3ddev;    // the pointer to the device 
+
+
+LPD3DXSPRITE GoobeatSprite=NULL;
+LPDIRECT3DTEXTURE9 GoobeatTexture=NULL;
+LPD3DXSPRITE LoadingSprite=NULL;
+LPDIRECT3DTEXTURE9 LoadingTexture=NULL;
+
+FLOAT CalcFPS();
+
+MSG msg;
+// function prototypes
+HRESULT initD3D(HWND hWnd);    // sets up and initializes 
+
+void DrawLoading(FLOAT exp);
+void render_frame(UI* ui);    // renders a single frame
+void cleanD3D(void);    // closes Direct3D and releases memory
+
+
+LRESULT CALLBACK WndProc(HWND,UINT,WPARAM,LPARAM);
+HINSTANCE g_hInst;
+LPCWSTR lpszClass=L"Goobeat+ Project v.1.2.1";
+
+int APIENTRY WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance
+	,LPSTR lpszCmdParam,int nCmdShow)
+{
+//	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+
+	//	_CrtSetBreakAlloc(  );
+
+
+	FILE* fp=NULL;
+	_wfopen_s(&fp, L"setting.se", L"rb");
+
+	bool flag=false;
+
+	int id;
+
+	int buffer;
+
+	int wwidth, wheight;
+	FLOAT exp;
+
+	float volumef;
+
+	int fcr, fcg, fcb;
+
+	int keyvalue[16];
+
+	try{
+		exception e;
+		if(fp==NULL){throw e;}
+		fread(&id, sizeof(int), 1, fp);
+		if(id!=0x5C1EED00){
+			throw e;
+		}
+		fread(&buffer, sizeof(int), 1, fp);
+		switch(buffer){
+		case 1:
+			wwidth=240;
+			wheight=330;
+			exp=0.5f;
+			break;
+		case 2:
+			wwidth=360;
+			wheight=495;
+			exp=0.75f;
+			break;
+		case 3:
+			wwidth=480;
+			wheight=660;
+			exp=1.0f;
+			break;
+		case 4:
+			wwidth=600;
+			wheight=825;
+			exp=1.25f;
+			break;
+		case 5:
+			wwidth=720;
+			wheight=990;
+			exp=1.5f;
+			break;
+		default:
+			throw e;
+			break;
+		}
+		fread(&id, sizeof(int), 1, fp);
+		if(id!=0x50166E01){
+			throw e;
+		}
+		fread(&buffer, sizeof(int), 1, fp);
+		if(buffer<0||buffer>10){
+			throw e;
+		}
+		else{
+			volumef=(float)buffer;
+			volumef*=0.1f;
+		}
+		fread(&id, sizeof(int), 1, fp);
+		if(id!=0x1072f072){
+			throw e;
+		}
+		fread(&fcr, sizeof(int), 1, fp);
+		fread(&fcg, sizeof(int), 1, fp);
+		fread(&fcb, sizeof(int), 1, fp);
+		if(fcr>255||fcb>255||fcg>255||fcr<0||fcb<0||fcg<0){
+			throw e;
+		}
+		fread(&id, sizeof(int), 1, fp);
+		if(id!=0x21212121){
+			throw e;
+		}
+
+		fread(keyvalue, sizeof(int), 16, fp);
+	}
+	catch(exception){
+		wwidth=480;
+		wheight=660;
+		exp=1.0f;
+		volumef=0.5f;
+		fcr=255;
+		fcg=255;
+		fcb=255;
+		keyvalue[0]='1';
+		keyvalue[1]='2';
+		keyvalue[2]='3';
+		keyvalue[3]='4';
+		keyvalue[4]='Q';
+		keyvalue[5]='W';
+		keyvalue[6]='E';
+		keyvalue[7]='R';
+		keyvalue[8]='A';
+		keyvalue[9]='S';
+		keyvalue[10]='D';
+		keyvalue[11]='F';
+		keyvalue[12]='Z';
+		keyvalue[13]='X';
+		keyvalue[14]='C';
+		keyvalue[15]='V';
+	}
+
+
+	if(fp!=NULL){fclose(fp);}
+
+	HWND hWnd;
+	WNDCLASSEX wc;
+
+	ZeroMemory(&wc, sizeof(WNDCLASSEX));
+
+	wc.cbSize = sizeof(WNDCLASSEX);
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc = (WNDPROC)WndProc;
+	wc.hInstance = hInstance;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	//    wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wc.lpszClassName = L"Goobeat";
+
+	RegisterClassEx(&wc);
+	hWnd = CreateWindowEx(NULL,
+		L"Goobeat",
+		L"Goobeat+ Project v.1.2.1",
+		WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+		CW_USEDEFAULT, CW_USEDEFAULT,
+		//		0,0,
+		wwidth+6, wheight+25,
+		NULL,
+		NULL,
+		hInstance,
+		NULL);
+
+	ShowWindow(hWnd, nCmdShow);
+
+
+	initD3D(hWnd);
+
+	DrawLoading(exp);
+
+	vector<Music*>* tempvector=new vector<Music*>();
+
+	NoteMake notemake;
+	notemake.MakeNote(tempvector, L"Music",L"..\\Note",0.42);
+
+	MusicList musiclist(tempvector, d3d, d3ddev, exp, fcr, fcg, fcb, volumef);
+
+	UI ui(d3d, d3ddev, 480, 600, exp, fcr, fcg, fcb, keyvalue);
+	ui.AddMusicList(&musiclist);
+
+
+	while(msg.message != WM_QUIT) {
+		if(PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+
+		}
+		if(d3ddev){
+			render_frame(&ui);
+		}
+
+
+
+		//		FLOAT K= CalcFPS();
+	}
+
+	// clean up DirectX and COM
+	cleanD3D();
+	if(GoobeatSprite!=NULL){GoobeatSprite->Release();}
+	if(GoobeatTexture!=NULL){GoobeatTexture->Release();}
+	if(LoadingSprite!=NULL){LoadingSprite->Release();}
+	if(LoadingTexture!=NULL){LoadingTexture->Release();}
+
+	delete(tempvector);
+
+	return msg.wParam;
+}
+
+
+
+LRESULT CALLBACK WndProc(HWND hWnd,UINT iMessage,WPARAM wParam,LPARAM lParam)
+{
+	switch(iMessage) {
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	}
+	return(DefWindowProc(hWnd,iMessage,wParam,lParam));
+}
+
+
+// this function initializes and prepares Direct3D for use
+HRESULT initD3D(HWND hWnd)//void
+{
+	d3d = Direct3DCreate9(D3D_SDK_VERSION);    // create the Direct3D interface
+
+	D3DPRESENT_PARAMETERS d3dpp;    // create a struct to hold various device information
+
+	ZeroMemory(&d3dpp, sizeof(d3dpp));    // clear out the struct for use
+	d3dpp.Windowed = TRUE;    // program windowed, not fullscreen
+	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;    // discard old frames
+	d3dpp.hDeviceWindow = hWnd;    // set the window to be used by Direct3D
+
+	/************추가
+
+	*/
+	d3dpp.BackBufferFormat=D3DFMT_UNKNOWN;
+
+
+
+
+	/*
+	**********************/
+
+	// create a device class using this information and the info from the d3dpp stuct
+	d3d->CreateDevice(D3DADAPTER_DEFAULT,
+		D3DDEVTYPE_HAL,
+		hWnd,
+		D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+		&d3dpp,
+		&d3ddev);
+
+	return S_OK;
+}
+
+
+// this is the function used to render a single frame
+void render_frame(UI* ui)
+{
+	// clear the window to a deep blue
+	//	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
+
+	//	d3ddev->BeginScene();    // begins the 3D scene
+
+	ui->Draw();
+	//	d3ddev->EndScene();    // ends the 3D scene
+
+	//	d3ddev->Present(NULL, NULL, NULL, NULL);   // displays the created frame on the screen
+
+}
+
+
+// this is the function that cleans up Direct3D and COM
+void cleanD3D(void)
+{
+	d3ddev->Release();    // close and release the 3D device
+	d3d->Release();    // close and release Direct3D
+}
+
+
+
+
+FLOAT CalcFPS() {
+	static int cnt = 0;
+	static DWORD curr_time = 0, prev_time = 0, elapsed = 0;
+	static float fps = 0.0f;
+
+	prev_time = curr_time;
+	curr_time = timeGetTime();
+	cnt++;
+	elapsed += curr_time - prev_time;
+
+	if(elapsed >= 1000) {
+		fps = cnt * 1000.0f / elapsed;
+		elapsed = 0;
+		cnt = 0;
+	}
+	return fps;
+}
+
+void DrawLoading(FLOAT exp){
+	D3DXCreateSprite(d3ddev, &GoobeatSprite);
+	D3DXCreateSprite(d3ddev, &LoadingSprite);
+	D3DXIMAGE_INFO ImageInfo;
+
+	D3DXGetImageInfoFromFile(L"goobeatplus.png", &ImageInfo);
+	D3DXCreateTextureFromFileEx(d3ddev, L"goobeatplus.png", ImageInfo.Width,ImageInfo.Height, 1, 0, D3DFMT_UNKNOWN, D3DPOOL_DEFAULT, D3DX_FILTER_NONE, D3DX_FILTER_NONE, 0, NULL, NULL, &GoobeatTexture);
+
+	D3DXMATRIX GooZoom;
+	D3DXMatrixTranslation(&GooZoom, 0.0f, 0.0f, 0.0f);
+	D3DXMatrixScaling(&GooZoom, exp, exp, 0.0f);
+
+	GoobeatSprite->SetTransform(&GooZoom);
+
+
+	D3DXGetImageInfoFromFile(L"loading.png", &ImageInfo);
+	D3DXCreateTextureFromFileEx(d3ddev, L"loading.png", ImageInfo.Width,ImageInfo.Height, 1, 0, D3DFMT_UNKNOWN, D3DPOOL_DEFAULT, D3DX_FILTER_NONE, D3DX_FILTER_NONE, 0, NULL, NULL, &LoadingTexture);
+
+	D3DXMATRIX LoadingZoom;
+	D3DXMatrixTranslation(&LoadingZoom, 0.0f, 0.0f, 0.0f);
+	D3DXMatrixScaling(&LoadingZoom, exp, exp,0.0f);
+
+	LoadingSprite->SetTransform(&LoadingZoom);
+
+	D3DXVECTOR3 vector(150.0f, 350.0f,0.0f);
+
+
+	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+
+	d3ddev->BeginScene();    // begins the 3D scene
+
+	GoobeatSprite->Begin(D3DXSPRITE_ALPHABLEND);
+	GoobeatSprite->Draw(GoobeatTexture, NULL, NULL, NULL, 0xFFFFFFFF);
+	GoobeatSprite->End();
+	LoadingSprite->Begin(D3DXSPRITE_ALPHABLEND);
+	LoadingSprite->Draw(LoadingTexture, NULL, NULL, &vector, 0xFFFFFFFF);
+	LoadingSprite->End();
+
+	d3ddev->EndScene();    // ends the 3D scene
+
+	d3ddev->Present(NULL, NULL, NULL, NULL);   // displays the created frame on the screen
+
+}

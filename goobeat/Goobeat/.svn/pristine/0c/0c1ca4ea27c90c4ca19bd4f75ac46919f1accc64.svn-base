@@ -1,0 +1,42 @@
+#pragma once
+
+#include "waveformat.h"
+#include "dataformat.h"
+#include "2darray.h"
+#include "waveanalysismatrix.h"
+#include "sincosmake.h"
+#include <vector>
+#include <fstream>
+#include <string.h>
+
+
+using namespace std;
+
+class Note_T
+{
+private:
+	WAVE* wave;
+	CHUNK* chunk;
+	RIFF* riff;
+	FORMAT* format;
+	FACT* fact;
+	FILE* fp;
+	FILE* fpout;
+	double* cosarray;
+	double* sinarray;
+	unsigned int alldatasize;
+	vector<vector<Data_T>*>* data;
+	int samplelong;
+	int datasize;
+public:
+	Note_T(const char* fname);
+	~Note_T(){
+		fclose(fp);
+		fclose(fpout);
+		free(data);
+		free_vector<double>(cosarray);
+		free_vector<double>(sinarray);
+	}
+	vector<vector<Data_T>*>* datareference(){return data;}
+	void MakeData(int loud);
+};

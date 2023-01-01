@@ -1,0 +1,16 @@
+#include "notes.h"
+
+using namespace std;
+
+class NoteMake{
+private:
+	Note_T* note;
+
+public:
+	NoteMake(){;}
+	~NoteMake(){;}
+	void MakeNoteWav(const wchar_t * inputpath, const wchar_t* outputpath, int loud);
+		//inputpath경로에 있는 wav파일에서 노트를 만듬. outpath경로에 저장
+	void MakeNoteMp3(const wchar_t * inputpath, const wchar_t* outputpath, int loud);
+		//mp3 "
+};

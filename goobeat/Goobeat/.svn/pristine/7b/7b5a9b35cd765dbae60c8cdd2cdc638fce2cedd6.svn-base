@@ -1,0 +1,84 @@
+#pragma once
+
+#include"2darray.h"
+#include<math.h>
+#include<vector>
+#include<algorithm>
+#include"dataformat.h"
+
+template <typename T>
+double* cos_analysis(const T* arrays, const int length, const double* cosvalue, int flag){
+	double* result=vector_space<double>(length);
+	int temp=(length>250?250:length);
+	for(int i=0;i<temp;i++){
+		for(int j=0;j<length;j+=flag){
+			result[i]+=cosvalue[(i*j)%length]*(double)arrays[j];
+		}
+	}
+
+	result[0]/=2;
+
+
+	return result;
+}
+
+
+
+template <typename T>
+double* sin_analysis(const T* arrays, const int length, const double* sinvalue, int flag){
+	double* result=vector_space<double>(length);
+	int temp=(length>250?250:length);
+	for(int i=0;i<temp;i++){
+		for(int j=0;j<length;j+=flag){
+			result[i]+=sinvalue[(i*j)%length]*(double)arrays[j];
+		}
+	}
+
+	result[0]=(double)0;
+
+
+	return result;
+	
+}
+
+template<typename T>
+vector<Data_T>* wave_analysis(const T* arrays, const int length, const double* cosvalue, const double* sinvalue){
+
+	int flag=1;
+	if(length%4==0){
+		flag=4;
+	}
+	else if(length%2==0){
+		flag=2;
+	}
+	else{flag=1;}
+	
+	double* a;
+	double* b;
+	vector<Data_T> c(length);
+	c.clear();
+
+	int lenth=length/flag;
+
+	a=cos_analysis<T>(arrays, lenth, cosvalue, flag);
+	b=sin_analysis<T>(arrays, lenth, sinvalue, flag);
+	for(int i=0;i<lenth;i++){
+		Data_T temp;
+		temp.louder=a[i]*a[i]+b[i]*b[i];
+		temp.num=i+1;
+		c.push_back(temp);
+	}
+	free_vector(a);
+	free_vector(b);
+	sort(c.begin(),c.end());
+	vector<Data_T>* result=new vector<Data_T>(10);
+	result->clear();
+	for(int i=1;i<=10;i++){
+		Data_T tempdata;
+		double temp=sqrt(c[lenth-i].louder);
+		tempdata.louder=sqrt(temp);
+		tempdata.num=c[lenth-i].num;
+		result->push_back(tempdata);
+	}
+	return result;
+}

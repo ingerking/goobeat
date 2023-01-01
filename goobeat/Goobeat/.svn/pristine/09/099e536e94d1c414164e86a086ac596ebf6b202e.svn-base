@@ -1,0 +1,19 @@
+#pragma once
+
+#include "Music.h"
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+class MusicList{
+private:
+	vector<Music*> musiclistvector[3];
+	int location;
+	int listsize;
+public:
+	MusicList(vector<Music*>* tempvector);
+	~MusicList(){;}
+	void MoveRight();
+	void MoveLeft();
+};
